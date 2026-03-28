@@ -1,0 +1,63 @@
+name: Daily Paper Collection
+
+on:
+  # 毎日 UTC 00:00 (JST 09:00) に実行
+  schedule:
+    - cron: "0 0 * * *"
+  # 手動実行も可能
+  workflow_dispatch:
+    inputs:
+      days_back:
+        description: "過去何日分を取得するか (デフォルト: config.yaml の値)"
+        required: false
+        default: ""
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Override days_back if specified
+        if: ${{ github.event.inputs.days_back != '' }}
+        run: |
+          python - <<'EOF'
+          import yaml, sys
+          with open("config.yaml") as f:
+              cfg = yaml.safe_load(f)
+          cfg["search"]["days_back"] = int("${{ github.event.inputs.days_back }}")
+          with open("config.yaml", "w") as f:
+              yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False)
+          print(f"days_back を {cfg['search']['days_back']} に変更しました")
+          EOF
+
+      - name: Collect papers
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python collect_papers.py
+
+      - name: Commit and push collected papers
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add papers/
+          if git diff --cached --quiet; then
+            echo "新着論文なし - コミットをスキップします"
+          else
+            DATE=$(date -u +"%Y-%m-%d")
+            git commit -m "chore: collect papers ${DATE}"
+            git push
+          fi
