@@ -1,6 +1,14 @@
 # 論文収集ボット (Paper Collection Bot)
 
-arXiv から毎日自動的に論文を収集し、JSON/CSV 形式で保存します。
+arXiv から毎日自動的に論文を収集し、**Claude AI で研究テーマとの関連度をスコアリング**して役立つ論文だけを保存します。
+
+## 機能
+
+- arXiv から毎日論文を自動収集 (GitHub Actions)
+- **Claude API (claude-haiku) で各論文の関連度を 0-10 でスコアリング**
+- 閾値以上の論文だけ JSON/CSV に保存
+- Slack 通知対応 (スコア・理由つき)
+- `--dry-run` で保存せずに結果を確認可能
 
 ## セットアップ
 
@@ -15,64 +23,66 @@ pip install -r requirements.txt
 ```yaml
 search:
   queries:
-    - "large language models"   # 検索キーワードを追加・変更
+    - "politeness theory"         # ← 検索キーワード
+    - "speech act Japanese"
   categories:
-    - "cs.LG"                   # arXiv カテゴリで絞り込み
-  max_results: 50               # 最大取得件数
-  days_back: 1                  # 過去何日分を取得するか
+    - "cs.CL"                     # ← arXiv カテゴリ (空リストで全カテゴリ)
+  max_results: 100
+  days_back: 1
 
-output:
-  directory: "papers"           # 保存先ディレクトリ
-  format: "both"                # "json", "csv", "both"
+scoring:
+  enabled: true
+  model: "claude-haiku-4-5-20251001"
+  threshold: 6                    # ← 6以上のスコアの論文を保存
+  research_description: |
+    私の研究テーマは... (自由記述)
 ```
 
-arXiv のカテゴリ一覧は [こちら](https://arxiv.org/category_taxonomy) を参照してください。
+### 3. API キーの設定
 
-### 3. ローカルで実行
+**ローカル実行:**
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+**GitHub Actions:**
+リポジトリの Settings → Secrets and variables → Actions に追加:
+- `ANTHROPIC_API_KEY` (必須・スコアリング用)
+- `SLACK_WEBHOOK_URL` (任意・Slack 通知用)
+
+### 4. 実行
 
 ```bash
-# 通常実行
+# 通常実行 (スコアリングあり)
 python collect_papers.py
 
-# 結果を表示するだけ (保存しない)
+# 保存せず結果だけ表示
 python collect_papers.py --dry-run
 
-# 別の設定ファイルを使用
-python collect_papers.py --config my_config.yaml
+# スコアリングなし (API キー不要)
+python collect_papers.py --no-scoring
 ```
 
 ## GitHub Actions による自動実行
 
-毎日 **JST 09:00** (UTC 00:00) に自動で論文を収集し、`papers/` ディレクトリにコミットします。
+毎日 **JST 09:00** に自動実行し、関連度の高い論文を `papers/` にコミットします。
 
-### 手動実行
-
-GitHub の Actions タブ → "Daily Paper Collection" → "Run workflow" から手動実行できます。
-`days_back` に日数を入力すると過去分を一括取得できます。
-
-### Slack 通知の設定
-
-1. Slack の [Incoming Webhook](https://api.slack.com/messaging/webhooks) を作成
-2. リポジトリの Settings → Secrets → `SLACK_WEBHOOK_URL` に Webhook URL を登録
-3. `config.yaml` の `notify.slack` を `true` に変更
+Actions タブ → "Daily Paper Collection" → "Run workflow" で手動実行も可能です。
 
 ## 出力ファイル
 
 ```
 papers/
-├── papers_20260328.json   # JSON 形式
-└── papers_20260328.csv    # CSV 形式
+├── papers_20260328.json
+└── papers_20260328.csv
 ```
-
-各論文には以下の情報が含まれます:
 
 | フィールド | 説明 |
 |---|---|
 | `arxiv_id` | arXiv ID |
 | `title` | タイトル |
-| `authors` | 著者リスト |
+| `authors` | 著者 |
 | `abstract` | 要旨 |
-| `categories` | arXiv カテゴリ |
-| `published` | 投稿日時 |
-| `url` | arXiv URL |
-| `pdf_url` | PDF URL |
+| `relevance_score` | 関連度スコア (0-10) |
+| `relevance_reason` | スコアの理由 (日本語) |
+| `url` / `pdf_url` | arXiv / PDF リンク |

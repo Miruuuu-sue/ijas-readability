@@ -2,37 +2,59 @@
 # Paper Collection Bot Configuration
 
 # 検索キーワード (AND/OR 検索対応)
-# Search keywords
 search:
   queries:
-    - "large language models"
-    - "transformer"
-    - "machine learning"
-  # arXiv カテゴリ (空の場合は全カテゴリ)
+    - "politeness theory"
+    - "speech act Japanese"
+    - "pragmatic competence Japanese"
+    - "second language acquisition Japanese"
+    - "complaint expression"
+    - "face-threatening act"
+    - "Japanese language learners pragmatics"
+    - "L2 Japanese discourse"
+    - "Japanese honorifics learners"
+    - "intercultural pragmatics Japanese"
+  # arXiv カテゴリ (空リストにすると全カテゴリを対象にする)
   # See: https://arxiv.org/category_taxonomy
   categories:
-    - "cs.LG"   # Machine Learning
-    - "cs.AI"   # Artificial Intelligence
-    - "cs.CL"   # Computation and Language
-  # 1回の検索で取得する最大件数
-  max_results: 50
+    - "cs.CL"   # Computation and Language (NLP)
+  # 1回の検索で取得する最大件数 (LLM スコアリング前の上限)
+  max_results: 100
   # 過去何日分を取得するか (0 = 今日のみ)
   days_back: 1
 
+# LLM による関連度スコアリング設定
+# ANTHROPIC_API_KEY 環境変数が必要
+scoring:
+  # スコアリングを有効にするか
+  enabled: true
+  # 使用するモデル
+  model: "claude-haiku-4-5-20251001"
+  # この閾値(0-10)以上の論文だけ保存する
+  threshold: 6
+  # 研究テーマの説明 (LLM がスコアリングに使用)
+  research_description: |
+    私の研究テーマは「日本語教育における語用論的能力」です。
+    主なトピックは以下の通りです:
+    - ポライトネス理論 (Brown & Levinson のフェイス理論など)
+    - 日本語学習者が日本語の社会言語学的・語用論的側面を習得するプロセス
+    - 不満表明・依頼・謝罪・断りなどの発話行為 (speech acts) の運用
+    - 日本語の敬語・丁寧語・待遇表現の使用と学習
+    - 第二言語習得 (SLA) における語用論的転移・語用論的失敗
+    - 異文化間コミュニケーション・日本語の談話分析
+    - NLP・計算言語学を用いた語用論・談話・教育応用
+
 # 出力設定
 output:
-  # 保存ディレクトリ
   directory: "papers"
   # ファイル形式: json, csv, both
   format: "both"
-  # ファイル名プレフィックス
   filename_prefix: "papers"
 
-# 通知設定 (GitHub Actions の Secrets で設定)
+# 通知設定
 notify:
   # Slack 通知 (SLACK_WEBHOOK_URL シークレットが必要)
   slack: false
-  # メール通知 (未実装)
   email: false
   # 通知する最大件数 (0 = 全件)
   max_notify: 10
