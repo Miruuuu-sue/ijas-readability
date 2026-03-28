@@ -1,0 +1,38 @@
+# 論文収集ボット設定ファイル
+# Paper Collection Bot Configuration
+
+# 検索キーワード (AND/OR 検索対応)
+# Search keywords
+search:
+  queries:
+    - "large language models"
+    - "transformer"
+    - "machine learning"
+  # arXiv カテゴリ (空の場合は全カテゴリ)
+  # See: https://arxiv.org/category_taxonomy
+  categories:
+    - "cs.LG"   # Machine Learning
+    - "cs.AI"   # Artificial Intelligence
+    - "cs.CL"   # Computation and Language
+  # 1回の検索で取得する最大件数
+  max_results: 50
+  # 過去何日分を取得するか (0 = 今日のみ)
+  days_back: 1
+
+# 出力設定
+output:
+  # 保存ディレクトリ
+  directory: "papers"
+  # ファイル形式: json, csv, both
+  format: "both"
+  # ファイル名プレフィックス
+  filename_prefix: "papers"
+
+# 通知設定 (GitHub Actions の Secrets で設定)
+notify:
+  # Slack 通知 (SLACK_WEBHOOK_URL シークレットが必要)
+  slack: false
+  # メール通知 (未実装)
+  email: false
+  # 通知する最大件数 (0 = 全件)
+  max_notify: 10
